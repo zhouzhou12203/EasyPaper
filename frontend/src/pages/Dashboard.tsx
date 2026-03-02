@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, ArrowRight, Clock, CheckCircle, AlertCircle, Languages, BookOpen, Trash2, Search, Highlighter, Brain } from "lucide-react";
+import { Upload, FileText, ArrowRight, Clock, CheckCircle, AlertCircle, Languages, BookOpen, Trash2, Search, Highlighter, Brain, Link } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -30,6 +31,9 @@ const Dashboard = () => {
     const [highlight, setHighlight] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [dragging, setDragging] = useState(false);
+    const [inputMode, setInputMode] = useState<"file" | "url">("file");
+    const [pdfUrl, setPdfUrl] = useState("");
+    const [urlLoading, setUrlLoading] = useState(false);
     const navigate = useNavigate();
     const abortRef = useRef<AbortController | null>(null);
     const pollIntervalRef = useRef<number>(2000);
@@ -140,6 +144,36 @@ const Dashboard = () => {
         }
     };
 
+    const submitUrl = async () => {
+        const trimmed = pdfUrl.trim();
+        if (!trimmed) {
+            toast.error("Please enter a PDF URL.");
+            return;
+        }
+        try {
+            new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+        } catch {
+            toast.error("Please enter a valid URL.");
+            return;
+        }
+        setUrlLoading(true);
+        try {
+            await api.post("/api/upload-url", {
+                url: trimmed,
+                mode,
+                highlight,
+            });
+            toast.success("PDF downloaded — processing started!");
+            setPdfUrl("");
+            fetchTasks();
+        } catch (error: any) {
+            const msg = error.response?.data?.detail || "Failed to download PDF from URL.";
+            toast.error(msg);
+        } finally {
+            setUrlLoading(false);
+        }
+    };
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case "completed": return "text-green-600 bg-green-50 border-green-200";
@@ -235,40 +269,91 @@ const Dashboard = () => {
                         </button>
                     </div>
 
-                    <div className="flex flex-col items-center gap-3 pt-2">
-                        {dragging ? (
-                            <p className="text-primary font-medium text-lg">Drop PDF here</p>
-                        ) : (
-                            <Label
-                                htmlFor="file-upload"
-                                className={cn(
-                                    "group relative flex cursor-pointer items-center justify-center gap-3 rounded-full bg-primary px-8 py-4 text-lg font-medium text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:shadow-xl hover:scale-105 active:scale-95"
-                                )}
-                            >
-                                <Upload className="h-5 w-5" />
-                                <span>Upload PDF</span>
-                                <Input
-                                    id="file-upload"
-                                    type="file"
-                                    accept=".pdf"
-                                    className="hidden"
-                                    onChange={handleUpload}
-                                />
-                            </Label>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                            or drag and drop a PDF here (max {MAX_FILE_SIZE_MB}MB)
-                        </p>
-                        {uploadProgress !== null && (
-                            <div className="w-full max-w-xs space-y-1">
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Uploading...</span>
-                                    <span>{uploadProgress}%</span>
+                    <Tabs
+                        value={inputMode}
+                        onValueChange={(v) => setInputMode(v as "file" | "url")}
+                        className="w-full max-w-lg mx-auto pt-2"
+                    >
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="file" className="gap-2">
+                                <Upload className="h-4 w-4" />
+                                Upload File
+                            </TabsTrigger>
+                            <TabsTrigger value="url" className="gap-2">
+                                <Link className="h-4 w-4" />
+                                Paste URL
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="file" className="flex flex-col items-center gap-3 pt-2">
+                            {dragging ? (
+                                <p className="text-primary font-medium text-lg">Drop PDF here</p>
+                            ) : (
+                                <Label
+                                    htmlFor="file-upload"
+                                    className={cn(
+                                        "group relative flex cursor-pointer items-center justify-center gap-3 rounded-full bg-primary px-8 py-4 text-lg font-medium text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:shadow-xl hover:scale-105 active:scale-95"
+                                    )}
+                                >
+                                    <Upload className="h-5 w-5" />
+                                    <span>Upload PDF</span>
+                                    <Input
+                                        id="file-upload"
+                                        type="file"
+                                        accept=".pdf"
+                                        className="hidden"
+                                        onChange={handleUpload}
+                                    />
+                                </Label>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                                or drag and drop a PDF here (max {MAX_FILE_SIZE_MB}MB)
+                            </p>
+                            {uploadProgress !== null && (
+                                <div className="w-full max-w-xs space-y-1">
+                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>Uploading...</span>
+                                        <span>{uploadProgress}%</span>
+                                    </div>
+                                    <Progress value={uploadProgress} className="h-2" />
                                 </div>
-                                <Progress value={uploadProgress} className="h-2" />
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="url" className="flex flex-col items-center gap-3 pt-2">
+                            <div className="flex gap-2 w-full">
+                                <Input
+                                    type="url"
+                                    placeholder="https://arxiv.org/pdf/2602.09000"
+                                    value={pdfUrl}
+                                    onChange={(e) => setPdfUrl(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && submitUrl()}
+                                    disabled={urlLoading}
+                                    className="flex-1"
+                                />
+                                <Button
+                                    onClick={submitUrl}
+                                    disabled={urlLoading || !pdfUrl.trim()}
+                                    className="shrink-0 gap-2"
+                                >
+                                    {urlLoading ? (
+                                        <>
+                                            <Clock className="h-4 w-4 animate-spin" />
+                                            Downloading...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ArrowRight className="h-4 w-4" />
+                                            Process
+                                        </>
+                                    )}
+                                </Button>
                             </div>
-                        )}
-                    </div>
+                            <p className="text-xs text-muted-foreground">
+                                Paste a direct PDF link (arXiv, OpenReview, etc.)
+                            </p>
+                        </TabsContent>
+                    </Tabs>
                 </div>
 
                 {/* Decorative background elements */}

@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
+from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -14,8 +17,17 @@ from ..core.config import get_config
 from ..models.task import TaskStatus
 from ..models.user import User
 from ..services.document_processor import DocumentProcessor
+from ..services.pdf_downloader import PdfDownloader
 from ..services.task_manager import TaskManager
 from .deps import get_current_user
+
+logger = logging.getLogger(__name__)
+
+
+class UploadUrlRequest(BaseModel):
+    url: str
+    mode: str = "translate"
+    highlight: bool = False
 
 
 def create_router(task_manager: TaskManager, processor: DocumentProcessor) -> APIRouter:
@@ -60,6 +72,59 @@ def create_router(task_manager: TaskManager, processor: DocumentProcessor) -> AP
         async def _process_with_limit() -> None:
             async with _semaphore:
                 await processor.process(task.task_id, file_bytes, task.filename, mode=mode, highlight=highlight)
+
+        asyncio.create_task(_process_with_limit())
+
+        return {"task_id": task.task_id}
+
+    @router.post("/upload-url")
+    @limiter.limit("10/minute")
+    async def upload_from_url(
+        request: Request,
+        body: UploadUrlRequest,
+        user: User = Depends(get_current_user),
+    ) -> dict[str, Any]:
+        if body.mode not in ("translate", "simplify"):
+            raise HTTPException(status_code=400, detail="mode must be 'translate' or 'simplify'")
+        if not body.url.strip():
+            raise HTTPException(status_code=400, detail="URL is required")
+
+        downloader = PdfDownloader(max_download_mb=cfg.processing.max_upload_mb)
+        try:
+            result = await downloader.download(body.url)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Failed to download PDF: HTTP {exc.response.status_code}",
+            )
+        except httpx.TimeoutException:
+            raise HTTPException(status_code=504, detail="Download timed out")
+        except Exception as exc:
+            logger.exception("Unexpected error downloading PDF from URL")
+            raise HTTPException(status_code=502, detail=f"Download failed: {exc}")
+
+        file_bytes = result.file_bytes
+        filename = result.filename
+
+        if len(file_bytes) > _max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"文件大小超过限制（最大 {cfg.processing.max_upload_mb}MB）",
+            )
+
+        task = task_manager.create_task(filename, user_id=user.id, mode=body.mode, highlight=body.highlight)
+
+        original_path = Path(task_manager.config.storage.temp_dir) / f"{task.task_id}_original.pdf"
+        with open(original_path, "wb") as f:
+            f.write(file_bytes)
+
+        task_manager.update_original_path(task.task_id, str(original_path))
+
+        async def _process_with_limit() -> None:
+            async with _semaphore:
+                await processor.process(task.task_id, file_bytes, task.filename, mode=body.mode, highlight=body.highlight)
 
         asyncio.create_task(_process_with_limit())
 
