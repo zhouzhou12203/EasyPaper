@@ -93,6 +93,15 @@ class TaskManager:
             session.add(task)
             session.commit()
 
+    def set_summary(self, task_id: str, summary_json: str) -> None:
+        with Session(engine) as session:
+            task = session.get(Task, task_id)
+            if not task:
+                return
+            task.summary_json = summary_json
+            session.add(task)
+            session.commit()
+
     def set_error(self, task_id: str, message: str) -> None:
         with Session(engine) as session:
             task = session.get(Task, task_id)

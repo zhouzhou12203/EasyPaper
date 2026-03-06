@@ -18,6 +18,7 @@ from ..models.task import TaskStatus
 from ..models.user import User
 from ..services.document_processor import DocumentProcessor
 from ..services.pdf_downloader import PdfDownloader
+from ..services.paper_summarizer import PaperSummarizer
 from ..services.task_manager import TaskManager
 from .deps import get_current_user
 
@@ -196,6 +197,46 @@ def create_router(task_manager: TaskManager, processor: DocumentProcessor) -> AP
             raise HTTPException(status_code=403, detail="无权访问此任务")
         task_manager.delete_task(task_id)
         return {"status": "deleted"}
+
+    @router.post("/summary/{task_id}")
+    async def generate_summary(
+        task_id: str,
+        user: User = Depends(get_current_user),
+    ) -> dict[str, Any]:
+        task = task_manager.get_task(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        if task.user_id != user.id:
+            raise HTTPException(status_code=403, detail="无权访问此任务")
+        if task.status != TaskStatus.COMPLETED:
+            raise HTTPException(status_code=400, detail="任务尚未完成")
+
+        # Return cached summary
+        if task.summary_json:
+            return json.loads(task.summary_json)
+
+        # Read original PDF
+        if not task.original_pdf_path or not Path(task.original_pdf_path).exists():
+            raise HTTPException(status_code=404, detail="原始文件不存在或已过期")
+
+        pdf_bytes = Path(task.original_pdf_path).read_bytes()
+
+        summarizer = PaperSummarizer(
+            api_key=cfg.llm.api_key,
+            model=cfg.llm.model,
+            base_url=cfg.llm.base_url,
+        )
+
+        try:
+            summary = await summarizer.summarize(pdf_bytes)
+        except Exception as exc:
+            logger.exception("Summary generation failed")
+            raise HTTPException(status_code=500, detail="摘要生成失败，请稍后重试")
+
+        # Cache result
+        task_manager.set_summary(task_id, json.dumps(summary, ensure_ascii=False))
+
+        return summary
 
     @router.get("/original/{task_id}/pdf")
     async def get_original_pdf(task_id: str, user: User = Depends(get_current_user)):

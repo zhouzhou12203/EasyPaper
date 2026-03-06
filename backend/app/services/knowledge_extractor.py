@@ -24,47 +24,45 @@ logger = logging.getLogger(__name__)
 
 
 METADATA_PROMPT = (
-    "You are an expert academic paper metadata extractor. "
-    "Extract the following metadata from the beginning of this paper:\n\n"
-    "- title: the exact paper title\n"
-    "- authors: list of authors, each with name and affiliation if available\n"
-    "- year: publication year (integer or null)\n"
-    "- doi: DOI string if present, otherwise null\n"
-    "- arxiv_id: arXiv ID if present (e.g. '2301.12345'), otherwise null\n"
-    "- venue: conference or journal name if present, otherwise null\n"
-    "- abstract: the full abstract text\n"
-    "- keywords: list of keywords if present, otherwise empty list\n\n"
-    "Respond ONLY with a JSON object:\n"
+    "你是一位专业的学术论文元数据提取专家。"
+    "从论文开头提取以下元数据：\n\n"
+    "- title: 论文的原始标题（保留原文语言）\n"
+    "- authors: 作者列表，每位作者包含姓名和机构（如有）\n"
+    "- year: 发表年份（整数或 null）\n"
+    "- doi: DOI 字符串（如有），否则 null\n"
+    "- arxiv_id: arXiv ID（如有，例如 '2301.12345'），否则 null\n"
+    "- venue: 会议或期刊名称（如有），否则 null\n"
+    "- abstract: 摘要的中文翻译（如原文为英文则翻译为中文）\n"
+    "- keywords: 关键词列表（中文），如无则为空列表\n\n"
+    "仅返回 JSON 对象：\n"
     '{"title": "...", "authors": [{"name": "...", "affiliation": "..."}], '
     '"year": 2025, "doi": "...", "arxiv_id": "...", "venue": "...", '
     '"abstract": "...", "keywords": ["..."]}\n'
 )
 
 SECTIONS_PROMPT = (
-    "You are an expert academic paper structure analyzer. "
-    "Identify the section structure of this paper from the text.\n\n"
-    "For each section, provide:\n"
-    "- title: the section heading\n"
-    "- level: heading level (1 for main sections like Introduction, 2 for subsections)\n"
-    "- summary: a 1-2 sentence summary of the section content\n\n"
-    "Respond ONLY with a JSON object:\n"
+    "你是一位专业的学术论文结构分析专家。"
+    "从文本中识别论文的章节结构。\n\n"
+    "对每个章节提供：\n"
+    "- title: 章节标题（保留原文）\n"
+    "- level: 标题层级（1为主章节如 Introduction，2为子章节）\n"
+    "- summary: 1-2句中文摘要\n\n"
+    "仅返回 JSON 对象：\n"
     '{"sections": [{"title": "Introduction", "level": 1, "summary": "..."}]}\n'
 )
 
 ENTITY_RELATIONSHIP_PROMPT = (
-    "You are an expert academic knowledge extractor. "
-    "From the following section of a paper, extract:\n"
-    "1. Key entities (concepts, methods, models, datasets, metrics, tasks)\n"
-    "2. Relationships between entities\n\n"
-    "Entity types: method, model, dataset, metric, concept, task, person, organization\n"
-    "Relationship types: extends, uses, evaluates_on, outperforms, similar_to, "
+    "你是一位专业的学术知识提取专家。"
+    "从论文的以下章节中提取：\n"
+    "1. 关键实体（概念、方法、模型、数据集、指标、任务）\n"
+    "2. 实体之间的关系\n\n"
+    "实体类型：method, model, dataset, metric, concept, task, person, organization\n"
+    "关系类型：extends, uses, evaluates_on, outperforms, similar_to, "
     "contradicts, part_of, requires\n\n"
-    "For each entity: name, type, aliases (list), definition (1 sentence), importance (0-1)\n"
-    "For each relationship: source (entity name), target (entity name), type, "
-    "description, confidence (0-1)\n\n"
-    "Return 3-10 entities and 1-8 relationships per section. "
-    "Skip trivial or generic entities.\n\n"
-    "Respond ONLY with JSON:\n"
+    "每个实体：name（专有名词保留英文）, type, aliases（列表）, definition（一句中文定义）, importance（0-1）\n"
+    "每个关系：source（实体名）, target（实体名）, type, description（中文描述）, confidence（0-1）\n\n"
+    "每个章节返回3-10个实体和1-8个关系。跳过琐碎或通用的实体。\n\n"
+    "仅返回 JSON：\n"
     '{"entities": [{"name": "...", "type": "method", "aliases": [], '
     '"definition": "...", "importance": 0.8}], '
     '"relationships": [{"source": "...", "target": "...", "type": "extends", '
@@ -72,27 +70,29 @@ ENTITY_RELATIONSHIP_PROMPT = (
 )
 
 FINDINGS_PROMPT = (
-    "You are an expert academic paper analyst. "
-    "Extract the key findings, methods, and datasets from this paper text.\n\n"
-    "For findings, classify as: result, limitation, or contribution\n"
-    "For methods, describe the approach with inputs and outputs\n"
-    "For datasets, note the name, description, and how it was used\n\n"
-    "Respond ONLY with JSON:\n"
+    "你是一位专业的学术论文分析专家。"
+    "从论文文本中提取关键发现、方法和数据集。\n\n"
+    "发现分类为：result（结果）、limitation（局限性）或 contribution（贡献）\n"
+    "方法：描述方法的输入和输出\n"
+    "数据集：记录名称、描述及使用方式\n\n"
+    "所有描述性文本使用中文，专有名词保留英文。\n\n"
+    "仅返回 JSON：\n"
     '{"findings": [{"type": "result", "statement": "...", "evidence": "..."}], '
     '"methods": [{"name": "...", "description": "...", "inputs": ["..."], "outputs": ["..."]}], '
     '"datasets": [{"name": "...", "description": "...", "usage": "evaluation"}]}\n'
 )
 
 FLASHCARD_PROMPT = (
-    "You are an expert educator creating spaced repetition flashcards. "
-    "Given these key concepts and findings from a paper, create flashcards.\n\n"
-    "Rules:\n"
-    "- Create 5-15 cards per paper\n"
-    "- Each card tests ONE specific concept or finding\n"
-    "- Front: clear question. Back: concise, accurate answer\n"
-    "- Difficulty 1-5 (1=basic terminology, 5=nuanced understanding)\n"
-    "- Tag each card with relevant categories\n\n"
-    "Respond ONLY with JSON:\n"
+    "你是一位专业的教育者，负责创建间隔重复闪卡。"
+    "根据论文中的关键概念和发现，创建闪卡。\n\n"
+    "规则：\n"
+    "- 每篇论文创建5-15张卡片\n"
+    "- 每张卡片测试一个具体的概念或发现\n"
+    "- 正面：清晰的中文问题。背面：简洁准确的中文回答\n"
+    "- 难度1-5（1=基本术语, 5=深层理解）\n"
+    "- 为每张卡片标注相关分类标签\n"
+    "- 专有名词（模型名、方法名等）保留英文\n\n"
+    "仅返回 JSON：\n"
     '{"flashcards": [{"front": "...", "back": "...", "tags": ["method"], "difficulty": 3}]}\n'
 )
 

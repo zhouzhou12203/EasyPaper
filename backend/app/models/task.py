@@ -49,6 +49,7 @@ class Task(SQLModel, table=True):
     original_pdf_path: str | None = Field(default=None)
     result_pdf_path: str | None = Field(default=None)
     result_preview_html: str | None = Field(default=None)
+    summary_json: str | None = Field(default=None)
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

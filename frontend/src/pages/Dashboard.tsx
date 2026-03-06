@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, ArrowRight, Clock, CheckCircle, AlertCircle, Languages, BookOpen, Trash2, Search, Highlighter, Brain, Link } from "lucide-react";
+import { Upload, FileText, ArrowRight, Clock, CheckCircle, AlertCircle, Languages, BookOpen, Trash2, Search, Highlighter, Brain, Link, Sparkles } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -74,11 +74,11 @@ const Dashboard = () => {
 
     const validateFile = (file: File): boolean => {
         if (file.type !== "application/pdf") {
-            toast.error("Only PDF files are supported.");
+            toast.error("仅支持 PDF 文件。");
             return false;
         }
         if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-            toast.error(`File size exceeds ${MAX_FILE_SIZE_MB}MB limit.`);
+            toast.error(`文件大小超过 ${MAX_FILE_SIZE_MB}MB 限制。`);
             return false;
         }
         return true;
@@ -101,10 +101,10 @@ const Dashboard = () => {
                     }
                 },
             });
-            toast.success(`"${file.name}" uploaded successfully.`);
+            toast.success(`"${file.name}" 上传成功。`);
             fetchTasks();
         } catch (error: any) {
-            const msg = error.response?.data?.detail || "Upload failed.";
+            const msg = error.response?.data?.detail || "上传失败。";
             toast.error(msg);
         } finally {
             setUploadProgress(null);
@@ -138,22 +138,22 @@ const Dashboard = () => {
         try {
             await api.delete(`/api/tasks/${taskId}`);
             setTasks((prev) => prev.filter((t) => t.task_id !== taskId));
-            toast.success("Task deleted.");
+            toast.success("任务已删除。");
         } catch {
-            toast.error("Failed to delete task.");
+            toast.error("删除任务失败。");
         }
     };
 
     const submitUrl = async () => {
         const trimmed = pdfUrl.trim();
         if (!trimmed) {
-            toast.error("Please enter a PDF URL.");
+            toast.error("请输入 PDF 链接。");
             return;
         }
         try {
             new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
         } catch {
-            toast.error("Please enter a valid URL.");
+            toast.error("请输入有效的链接。");
             return;
         }
         setUrlLoading(true);
@@ -163,11 +163,11 @@ const Dashboard = () => {
                 mode,
                 highlight,
             });
-            toast.success("PDF downloaded — processing started!");
+            toast.success("PDF 下载成功，已开始处理！");
             setPdfUrl("");
             fetchTasks();
         } catch (error: any) {
-            const msg = error.response?.data?.detail || "Failed to download PDF from URL.";
+            const msg = error.response?.data?.detail || "从链接下载 PDF 失败。";
             toast.error(msg);
         } finally {
             setUrlLoading(false);
@@ -225,8 +225,8 @@ const Dashboard = () => {
                         EasyPaper
                     </h1>
                     <p className="text-lg text-gray-600">
-                        Upload your English academic papers. Translate to Chinese or simplify
-                        complex vocabulary — while preserving layout, images, and formulas.
+                        上传英文学术论文，一键翻译为中文或简化专业术语，完整保留原始排版、图片与公式。
+                        支持 AI 智能高亮、论文摘要生成与知识库提取，让阅读论文更高效。
                     </p>
 
                     {/* Mode Selector */}
@@ -241,7 +241,7 @@ const Dashboard = () => {
                             )}
                         >
                             <Languages className="h-4 w-4" />
-                            Translate to Chinese
+                            翻译为中文
                         </button>
                         <button
                             onClick={() => setMode("simplify")}
@@ -253,7 +253,7 @@ const Dashboard = () => {
                             )}
                         >
                             <BookOpen className="h-4 w-4" />
-                            Simplify English
+                            简化英文
                         </button>
                         <button
                             onClick={() => setHighlight(!highlight)}
@@ -265,7 +265,7 @@ const Dashboard = () => {
                             )}
                         >
                             <Highlighter className="h-4 w-4" />
-                            AI Highlights
+                            AI 高亮
                         </button>
                     </div>
 
@@ -277,17 +277,17 @@ const Dashboard = () => {
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="file" className="gap-2">
                                 <Upload className="h-4 w-4" />
-                                Upload File
+                                上传文件
                             </TabsTrigger>
                             <TabsTrigger value="url" className="gap-2">
                                 <Link className="h-4 w-4" />
-                                Paste URL
+                                粘贴链接
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="file" className="flex flex-col items-center gap-3 pt-2">
                             {dragging ? (
-                                <p className="text-primary font-medium text-lg">Drop PDF here</p>
+                                <p className="text-primary font-medium text-lg">将 PDF 拖放到此处</p>
                             ) : (
                                 <Label
                                     htmlFor="file-upload"
@@ -296,7 +296,7 @@ const Dashboard = () => {
                                     )}
                                 >
                                     <Upload className="h-5 w-5" />
-                                    <span>Upload PDF</span>
+                                    <span>上传 PDF</span>
                                     <Input
                                         id="file-upload"
                                         type="file"
@@ -307,12 +307,12 @@ const Dashboard = () => {
                                 </Label>
                             )}
                             <p className="text-xs text-muted-foreground">
-                                or drag and drop a PDF here (max {MAX_FILE_SIZE_MB}MB)
+                                也可直接拖拽 PDF 到此处（最大 {MAX_FILE_SIZE_MB}MB）
                             </p>
                             {uploadProgress !== null && (
                                 <div className="w-full max-w-xs space-y-1">
                                     <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>Uploading...</span>
+                                        <span>上传中...</span>
                                         <span>{uploadProgress}%</span>
                                     </div>
                                     <Progress value={uploadProgress} className="h-2" />
@@ -339,18 +339,18 @@ const Dashboard = () => {
                                     {urlLoading ? (
                                         <>
                                             <Clock className="h-4 w-4 animate-spin" />
-                                            Downloading...
+                                            下载中...
                                         </>
                                     ) : (
                                         <>
                                             <ArrowRight className="h-4 w-4" />
-                                            Process
+                                            开始处理
                                         </>
                                     )}
                                 </Button>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Paste a direct PDF link (arXiv, OpenReview, etc.)
+                                粘贴 PDF 直链（支持 arXiv、OpenReview 等）
                             </p>
                         </TabsContent>
                     </Tabs>
@@ -364,12 +364,12 @@ const Dashboard = () => {
             {/* Task List */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between gap-4 px-2">
-                    <h2 className="text-2xl font-semibold tracking-tight shrink-0">Recent Documents</h2>
+                    <h2 className="text-2xl font-semibold tracking-tight shrink-0">最近文档</h2>
                     {tasks.length > 0 && (
                         <div className="relative max-w-xs w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search documents..."
+                                placeholder="搜索文档..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="pl-9 h-9"
@@ -394,11 +394,11 @@ const Dashboard = () => {
                                             <CardDescription className="text-xs flex items-center gap-1.5">
                                                 {new Date(task.created_at).toLocaleDateString()}
                                                 <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
-                                                    {task.mode === "simplify" ? "Simplify" : "Translate"}
+                                                    {task.mode === "simplify" ? "简化" : "翻译"}
                                                 </span>
                                                 {task.highlight && (
                                                     <span className="inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
-                                                        Highlighted
+                                                        已高亮
                                                     </span>
                                                 )}
                                             </CardDescription>
@@ -426,7 +426,7 @@ const Dashboard = () => {
                                     {["processing", "parsing", "rewriting", "rendering", "highlighting"].includes(task.status) && (
                                         <div className="space-y-1.5">
                                             <div className="flex justify-between text-xs text-muted-foreground">
-                                                <span>{task.message || "Processing..."}</span>
+                                                <span>{task.message || "处理中..."}</span>
                                                 <span>{task.percent || 0}%</span>
                                             </div>
                                             <Progress value={task.percent || 0} className="h-1.5" />
@@ -440,21 +440,34 @@ const Dashboard = () => {
                                                 variant="outline"
                                                 onClick={() => navigate(`/reader/${task.task_id}`)}
                                             >
-                                                Read
+                                                阅读
                                                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                                             </Button>
                                             <Button
                                                 variant="outline"
                                                 size="icon"
+                                                className="shrink-0 text-amber-600 hover:bg-amber-50 hover:text-amber-700 border-amber-200"
+                                                title="论文摘要"
+                                                onClick={() =>
+                                                    navigate(`/summary/${task.task_id}`, {
+                                                        state: { filename: task.filename },
+                                                    })
+                                                }
+                                            >
+                                                <Sparkles className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
                                                 className="shrink-0 text-violet-600 hover:bg-violet-50 hover:text-violet-700 border-violet-200"
-                                                title="Extract Knowledge"
+                                                title="提取知识库"
                                                 onClick={async (e) => {
                                                     e.stopPropagation();
                                                     try {
                                                         await api.post(`/api/knowledge/extract/${task.task_id}`);
-                                                        toast.success("Knowledge extraction started!");
+                                                        toast.success("知识提取已开始！");
                                                     } catch {
-                                                        toast.error("Failed to start extraction.");
+                                                        toast.error("知识提取启动失败。");
                                                     }
                                                 }}
                                             >
@@ -465,7 +478,7 @@ const Dashboard = () => {
 
                                     {task.status === "failed" && (
                                         <p className="text-xs text-red-500">
-                                            {task.message || "Processing failed"}
+                                            {task.message || "处理失败"}
                                         </p>
                                     )}
                                 </div>
@@ -475,7 +488,7 @@ const Dashboard = () => {
 
                     {filteredTasks.length === 0 && (
                         <div className="col-span-full py-12 text-center text-muted-foreground bg-gray-50/50 rounded-xl border border-dashed">
-                            <p>{search ? "No matching documents found." : "No documents yet. Upload one to get started!"}</p>
+                            <p>{search ? "未找到匹配的文档。" : "暂无文档，上传一篇论文开始体验吧！"}</p>
                         </div>
                     )}
                 </div>

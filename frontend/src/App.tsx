@@ -8,6 +8,7 @@ import KnowledgeBase from "./pages/KnowledgeBase";
 import PaperDetail from "./pages/PaperDetail";
 import FlashcardReview from "./pages/FlashcardReview";
 import KnowledgeGraph from "./pages/KnowledgeGraph";
+import PaperSummary from "./pages/PaperSummary";
 import Layout from "./components/Layout";
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
@@ -27,6 +28,7 @@ function App() {
         <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reader/:taskId" element={<Reader />} />
+          <Route path="/summary/:taskId" element={<PaperSummary />} />
           <Route path="/knowledge" element={<KnowledgeBase />} />
           <Route path="/knowledge/paper/:paperId" element={<PaperDetail />} />
           <Route path="/knowledge/review" element={<FlashcardReview />} />

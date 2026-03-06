@@ -41,6 +41,7 @@ def _migrate_db() -> None:
     migrations = [
         ("task", "highlight", "BOOLEAN DEFAULT 0"),
         ("task", "highlight_stats", "TEXT"),
+        ("task", "summary_json", "TEXT"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
