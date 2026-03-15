@@ -1,7 +1,7 @@
 fastapi==0.111.0
 uvicorn==0.30.1
 python-multipart==0.0.9
-PyMuPDF==1.24.5
+PyMuPDF>=1.25.1,<2
 reportlab==4.2.0
 httpx==0.27.0
 PyYAML==6.0.1
@@ -14,13 +14,12 @@ bcrypt==4.0.1
 python-jose[cryptography]==3.3.0
 email-validator==2.1.1
 numpy==1.26.4
-opencv-python-headless==4.9.0.80
-ultralytics==8.2.2
-huggingface_hub==0.23.0
+opencv-python-headless==4.10.0.84
+opencv-python==4.10.0.84
+huggingface_hub>=0.34.0,<1.0
 surya-ocr==0.4.14
-pdf2zh>=1.9.0
+pdf2zh==1.9.0
 slowapi==0.1.9
-# dev / test
 pytest==8.2.2
 pytest-asyncio==0.23.7
 ruff==0.4.8

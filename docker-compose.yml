@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./backend
+    image: ghcr.io/zhouzhou12203/easypaper-backend:main
     working_dir: /app
     volumes:
       - ./backend/config:/app/config
@@ -8,11 +8,12 @@ services:
       - backend-tmp:/app/tmp
     environment:
       - APP_CONFIG_PATH=/app/config/config.yaml
+      - HF_ENDPOINT=https://hf-mirror.com
     ports:
       - "8000:8000"
 
   frontend:
-    build: ./frontend
+    image: ghcr.io/zhouzhou12203/easypaper-frontend:main
     ports:
       - "80:80"
     depends_on:

@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 import asyncio
 import json
@@ -38,7 +37,7 @@ def create_router(task_manager: TaskManager, processor: DocumentProcessor) -> AP
     _semaphore = asyncio.Semaphore(cfg.processing.max_concurrent)
     limiter = Limiter(key_func=get_remote_address)
 
-    @router.post("/upload")
+    @router.post("/upload", response_model=None)
     @limiter.limit("10/minute")
     async def upload_pdf(
         request: Request,
@@ -78,7 +77,7 @@ def create_router(task_manager: TaskManager, processor: DocumentProcessor) -> AP
 
         return {"task_id": task.task_id}
 
-    @router.post("/upload-url")
+    @router.post("/upload-url", response_model=None)
     @limiter.limit("10/minute")
     async def upload_from_url(
         request: Request,
