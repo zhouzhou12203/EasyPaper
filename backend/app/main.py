@@ -20,7 +20,26 @@ from .services.document_processor import DocumentProcessor
 from .services.knowledge_extractor import KnowledgeExtractor
 from .services.task_manager import TaskManager
 
+
+def _patch_numpy_fromstring() -> None:
+    """Patch numpy.fromstring for libraries that still use it with binary data."""
+    try:
+        import numpy as np
+
+        original_fromstring = np.fromstring
+
+        def _fromstring(data, *args, **kwargs):
+            if isinstance(data, (bytes, bytearray)):
+                return np.frombuffer(data, *args, **kwargs)
+            return original_fromstring(data, *args, **kwargs)
+
+        np.fromstring = _fromstring  # type: ignore[assignment]
+    except Exception:
+        # If numpy isn't available yet, ignore and let import errors surface later.
+        return
+
 setup_logging()
+_patch_numpy_fromstring()
 config = get_config()
 task_manager = TaskManager(ttl_minutes=config.storage.cleanup_minutes)
 processor = DocumentProcessor(config=config, task_manager=task_manager)
