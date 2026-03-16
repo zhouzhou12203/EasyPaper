@@ -1,6 +1,7 @@
 services:
   backend:
     image: ghcr.io/zhouzhou12203/easypaper-backend:main
+    restart: unless-stopped
     working_dir: /app
     volumes:
       - ./backend/config:/app/config
@@ -15,6 +16,7 @@ services:
 
   frontend:
     image: ghcr.io/zhouzhou12203/easypaper-frontend:main
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:
