@@ -4,8 +4,9 @@ services:
     working_dir: /app
     volumes:
       - ./backend/config:/app/config
-      - backend-data:/app/data
-      - backend-tmp:/app/tmp
+      - ./backend/data:/app/data
+      - ./backend/tmp:/app/tmp
+      - ./backend/logs:/app/logs
     environment:
       - APP_CONFIG_PATH=/app/config/config.yaml
       - HF_ENDPOINT=https://hf-mirror.com
@@ -18,7 +19,3 @@ services:
       - "80:80"
     depends_on:
       - backend
-
-volumes:
-  backend-data:
-  backend-tmp:
