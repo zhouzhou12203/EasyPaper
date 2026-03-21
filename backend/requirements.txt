@@ -19,7 +19,7 @@ opencv-python==4.10.0.84
 huggingface_hub>=0.34.0,<1.0
 surya-ocr==0.4.14
 pdf2zh==1.9.0
-pdfminer.six==20240706
+pdfminer.six==20220524
 slowapi==0.1.9
 pytest==8.2.2
 pytest-asyncio==0.23.7
